@@ -1,7 +1,8 @@
+-- Dragon System (visual demo)
+
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UIS = game:GetService("UserInputService")
-local Debris = game:GetService("Debris")
 
 local player = Players.LocalPlayer
 local char = player.Character or player.CharacterAdded:Wait()
@@ -12,133 +13,140 @@ local wing1, wing2
 local flying = false
 local t = 0
 
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "DragonControlSystem"
-ScreenGui.Parent = player:WaitForChild("PlayerGui")
-ScreenGui.ResetOnSpawn = false
+-- 🐉 DRAGON MODEL
+function spawnDragon()
 
-local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 200, 0, 250)
-MainFrame.Position = UDim2.new(0.05, 0, 0.4, 0)
-MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-MainFrame.BorderSizePixel = 0
-MainFrame.Active = true
-MainFrame.Draggable = true
-MainFrame.Parent = ScreenGui
-
-local UICorner = Instance.new("UICorner")
-UICorner.CornerRadius = UDim.new(0, 10)
-UICorner.Parent = MainFrame
-
-local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, 0, 0, 40)
-Title.BackgroundColor3 = Color3.fromRGB(180, 0, 0)
-Title.Text = "Dragon Menu"
-Title.TextColor3 = Color3.new(1, 1, 1)
-Title.TextSize = 18
-Title.Font = Enum.Font.SourceSansBold
-Title.Parent = MainFrame
-
-local TitleCorner = Instance.new("UICorner")
-TitleCorner.CornerRadius = UDim.new(0, 10)
-TitleCorner.Parent = Title
-
-local function createBtn(text, pos, callback)
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(0.85, 0, 0, 45)
-    btn.Position = pos
-    btn.Text = text
-    btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    btn.TextColor3 = Color3.new(1, 1, 1)
-    btn.Font = Enum.Font.SourceSansBold
-    btn.TextSize = 14
-    btn.Parent = MainFrame
-    
-    local btnCorner = Instance.new("UICorner")
-    btnCorner.CornerRadius = UDim.new(0, 8)
-    btnCorner.Parent = btn
-    
-    btn.MouseButton1Click:Connect(callback)
-end
-
-function toggleDragon()
     if dragon then
         dragon:Destroy()
         dragon = nil
-    else
-        dragon = Instance.new("Model", workspace)
-        dragon.Name = "Dragon_" .. player.Name
-        
-        local function createPart(name, size, color)
-            local p = Instance.new("Part", dragon)
-            p.Name = name
-            p.Size = size
-            p.Material = Enum.Material.Neon
-            p.BrickColor = BrickColor.new(color)
-            p.CanCollide = false
-            pcall(function() p:SetNetworkOwner(player) end)
-            return p
-        end
-        
-        createPart("Body", Vector3.new(16, 6, 24), "Really red")
-        createPart("Head", Vector3.new(8, 6, 8), "Bright orange")
-        wing1 = createPart("Wing1", Vector3.new(20, 1, 10), "Black")
-        wing2 = createPart("Wing2", Vector3.new(20, 1, 10), "Black")
+        return
     end
+
+    dragon = Instance.new("Model")
+    dragon.Name = "Dragon"
+
+    local body = Instance.new("Part")
+    body.Size = Vector3.new(16,6,24)
+    body.Material = Enum.Material.Neon
+    body.BrickColor = BrickColor.new("Really red")
+    body.Anchored = true
+    body.Parent = dragon
+
+    local head = Instance.new("Part")
+    head.Size = Vector3.new(8,6,8)
+    head.Material = Enum.Material.Neon
+    head.BrickColor = BrickColor.new("Bright orange")
+    head.Anchored = true
+    head.Parent = dragon
+
+    wing1 = Instance.new("Part")
+    wing1.Size = Vector3.new(20,1,10)
+    wing1.BrickColor = BrickColor.new("Black")
+    wing1.Anchored = true
+    wing1.Parent = dragon
+
+    wing2 = wing1:Clone()
+    wing2.Parent = dragon
+
+    dragon.Parent = workspace
+
 end
 
+-- 🪽 WING ANIMATION
+RunService.RenderStepped:Connect(function(dt)
+
+    if not dragon then return end
+
+    t = t + dt * 6
+
+    local pos = root.Position
+
+    dragon:GetChildren()[1].CFrame =
+        CFrame.new(pos + Vector3.new(0,3,0))
+
+    dragon:GetChildren()[2].CFrame =
+        CFrame.new(pos + Vector3.new(0,4,-12))
+
+    wing1.CFrame =
+        CFrame.new(pos + Vector3.new(-10,4,0))
+        * CFrame.Angles(0,0,math.sin(t))
+
+    wing2.CFrame =
+        CFrame.new(pos + Vector3.new(10,4,0))
+        * CFrame.Angles(0,0,-math.sin(t))
+
+end)
+
+-- 🔥 FIRE BREATH EFFECT
 function fireBreath()
-    for i = 1, 10 do
-        local fire = Instance.new("Part", workspace)
-        fire.Size = Vector3.new(4, 4, 4)
+
+    for i = 1,15 do
+
+        local fire = Instance.new("Part")
+        fire.Size = Vector3.new(6,6,12)
         fire.Material = Enum.Material.Neon
         fire.BrickColor = BrickColor.new("Bright orange")
         fire.CanCollide = false
-        fire.CFrame = root.CFrame * CFrame.new(0, 0, -8)
-        
-        local bv = Instance.new("BodyVelocity", fire)
-        bv.Velocity = root.CFrame.LookVector * 120
-        bv.MaxForce = Vector3.new(1, 1, 1) * 10^6
-        
-        Debris:AddItem(fire, 1.5)
-        task.wait(0.1)
+        fire.CFrame = root.CFrame * CFrame.new(0,0,-8)
+        fire.Parent = workspace
+
+        local vel = Instance.new("BodyVelocity")
+        vel.Velocity = root.CFrame.LookVector * 150
+        vel.MaxForce = Vector3.new(999999,999999,999999)
+        vel.Parent = fire
+
+        game.Debris:AddItem(fire,2)
+
+        task.wait(0.05)
+
     end
+
 end
 
+-- 💨 FLY SYSTEM
 function toggleFly()
+
     flying = not flying
+
     if flying then
-        local bv = Instance.new("BodyVelocity", root)
+
+        local bv = Instance.new("BodyVelocity")
         bv.Name = "DragonFly"
-        bv.MaxForce = Vector3.new(1, 1, 1) * 10^6
+        bv.MaxForce = Vector3.new(999999,999999,999999)
+        bv.Parent = root
+
+        RunService.RenderStepped:Connect(function()
+
+            if root:FindFirstChild("DragonFly") then
+                root.DragonFly.Velocity =
+                    root.CFrame.LookVector * 120
+            end
+
+        end)
+
     else
+
         if root:FindFirstChild("DragonFly") then
             root.DragonFly:Destroy()
         end
+
     end
+
 end
 
-RunService.RenderStepped:Connect(function(dt)
-    if not dragon or not dragon:FindFirstChild("Body") then return end
-    t = t + dt * 6
-    local pos = root.Position
-    dragon.Body.CFrame = CFrame.new(pos + Vector3.new(0, 8, 0)) * root.CFrame.Rotation
-    dragon.Head.CFrame = dragon.Body.CFrame * CFrame.new(0, 1, -14)
-    wing1.CFrame = (dragon.Body.CFrame * CFrame.new(-12, 2, 0)) * CFrame.Angles(0, 0, math.sin(t))
-    wing2.CFrame = (dragon.Body.CFrame * CFrame.new(12, 2, 0)) * CFrame.Angles(0, 0, -math.sin(t))
-    
-    if flying and root:FindFirstChild("DragonFly") then
-        root.DragonFly.Velocity = root.CFrame.LookVector * 120
-    end
-end)
+-- 🎮 TUGMALAR
+UIS.InputBegan:Connect(function(input)
 
-createBtn("Spawn Dragon", UDim2.new(0.075, 0, 0.22, 0), toggleDragon)
-createBtn("Fire Breath", UDim2.new(0.075, 0, 0.45, 0), fireBreath)
-createBtn("Toggle Fly", UDim2.new(0.075, 0, 0.68, 0), toggleFly)
-
-UIS.InputBegan:Connect(function(input, gpe)
-    if gpe then return end
-    if input.KeyCode == Enum.KeyCode.Insert then
-        MainFrame.Visible = not MainFrame.Visible
+    if input.KeyCode == Enum.KeyCode.T then
+        spawnDragon()
     end
+
+    if input.KeyCode == Enum.KeyCode.F then
+        fireBreath()
+    end
+
+    if input.KeyCode == Enum.KeyCode.G then
+        toggleFly()
+    end
+
 end)
