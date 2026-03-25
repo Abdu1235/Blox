@@ -1,148 +1,177 @@
--- Dragon Fruit System (No Arabic)
--- Replicated to all players
--- Use [Insert] to toggle menu
-
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UIS = game:GetService("UserInputService")
 local Debris = game:GetService("Debris")
+local TweenService = game:GetService("TweenService")
 
 local player = Players.LocalPlayer
 local char = player.Character or player.CharacterAdded:Wait()
-local root = char:WaitForChild("HumanoidRootPart")
 local hum = char:WaitForChild("Humanoid")
+local root = char:WaitForChild("HumanoidRootPart")
 
-local dragonVisual = nil
+local isTransformed = false
+local dragonModel = nil
 local wing1, wing2
-local t = 0
+local rotTick = 0
 
--- UI Setup
+-- [[ UI DESIGN ]]
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "DragonFruitGui"
+ScreenGui.Name = "DragonSim_v3"
 ScreenGui.Parent = player:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
 
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 200, 0, 150)
-MainFrame.Position = UDim2.new(0.05, 0, 0.3, 0)
-MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+MainFrame.Size = UDim2.new(0, 220, 0, 100)
+MainFrame.Position = UDim2.new(0.5, -110, 0.8, 0)
+MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
 MainFrame.Draggable = true
 MainFrame.Parent = ScreenGui
 
 local UICorner = Instance.new("UICorner")
+UICorner.CornerRadius = UDim.new(0, 12)
 UICorner.Parent = MainFrame
 
 local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, 0, 0, 40)
-Title.Text = "Dragon Fruit v2"
-Title.TextColor3 = Color3.new(1, 1, 1)
-Title.BackgroundColor3 = Color3.fromRGB(180, 0, 0)
-Title.Font = Enum.Font.SourceSansBold
-Title.TextSize = 18
+Title.Size = UDim2.new(1, 0, 0, 30)
+Title.Text = "DRAGON FRUIT SYSTEM"
+Title.TextColor3 = Color3.fromRGB(255, 50, 50)
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 14
+Title.BackgroundTransparency = 1
 Title.Parent = MainFrame
-Instance.new("UICorner", Title)
 
--- Functions
-function fireBreathEffect()
-    local spawnCF = root.CFrame
-    if dragonVisual and dragonVisual:FindFirstChild("Head") then
-        spawnCF = dragonVisual.Head.CFrame
+-- [[ CORE FUNCTIONS ]]
+
+function createDragonModel()
+    if dragonModel then dragonModel:Destroy() end
+    
+    dragonModel = Instance.new("Model", workspace)
+    dragonModel.Name = "DragonEntity_" .. player.Name
+    
+    local function makePart(name, size, color, offset)
+        local p = Instance.new("Part", dragonModel)
+        p.Name = name
+        p.Size = size
+        p.Material = Enum.Material.Neon
+        p.BrickColor = BrickColor.new(color)
+        p.CanCollide = false
+        p.Anchored = true
+        return p
     end
     
-    for i = 1, 12 do
-        local fire = Instance.new("Part", workspace)
-        fire.Size = Vector3.new(5, 5, 5)
-        fire.Material = Enum.Material.Neon
-        fire.BrickColor = BrickColor.new("Bright orange")
-        fire.CanCollide = false
-        fire.CFrame = spawnCF * CFrame.new(0, 0, -6)
+    local body = makePart("Body", Vector3.new(18, 7, 26), "Really red")
+    local head = makePart("Head", Vector3.new(10, 7, 10), "Bright orange")
+    wing1 = makePart("Wing1", Vector3.new(25, 1, 12), "Black")
+    wing2 = makePart("Wing2", Vector3.new(25, 1, 12), "Black")
+end
+
+function fireSkill()
+    local origin = isTransformed and dragonModel.Head.CFrame or root.CFrame
+    for i = 1, 15 do
+        local p = Instance.new("Part", workspace)
+        p.Size = Vector3.new(5, 5, 5)
+        p.Color = Color3.fromRGB(255, 100, 0)
+        p.Material = Enum.Material.Neon
+        p.CFrame = origin * CFrame.new(0, 0, -5)
+        p.CanCollide = false
         
-        local bv = Instance.new("BodyVelocity", fire)
-        bv.Velocity = spawnCF.LookVector * 120
-        bv.MaxForce = Vector3.new(1, 1, 1) * 10^6
+        local bv = Instance.new("BodyVelocity", p)
+        bv.MaxForce = Vector3.new(1,1,1) * 1e6
+        bv.Velocity = origin.LookVector * 130
         
-        Debris:AddItem(fire, 1.5)
-        task.wait(0.1)
+        Debris:AddItem(p, 1.2)
+        task.wait(0.08)
     end
 end
 
-function toggleDragonForm()
-    if dragonVisual then
-        dragonVisual:Destroy()
-        dragonVisual = nil
-        hum.HipHeight = 0
+function transformSkill()
+    isTransformed = not isTransformed
+    if isTransformed then
+        createDragonModel()
+        hum.HipHeight = 12
     else
-        dragonVisual = Instance.new("Model", workspace)
-        dragonVisual.Name = "DragonForm_" .. player.Name
-        
-        local function createPart(name, size, color)
-            local p = Instance.new("Part", dragonVisual)
-            p.Name = name; p.Size = size; p.Material = Enum.Material.Neon
-            p.BrickColor = BrickColor.new(color); p.CanCollide = false
-            pcall(function() p:SetNetworkOwner(player) end)
-            return p
-        end
-        
-        createPart("Body", Vector3.new(16, 6, 24), "Really red")
-        createPart("Head", Vector3.new(8, 6, 8), "Bright orange")
-        wing1 = createPart("Wing1", Vector3.new(20, 1, 10), "Black")
-        wing2 = createPart("Wing2", Vector3.new(20, 1, 10), "Black")
-        
-        hum.HipHeight = 10
+        if dragonModel then dragonModel:Destroy() dragonModel = nil end
+        hum.HipHeight = 0
     end
 end
 
-function eatFruit()
+-- [[ THE FAKE FRUIT ITEM ]]
+function spawnFakeFruit()
     local backpack = player:FindFirstChild("Backpack")
     if not backpack then return end
-
-    local zSkill = Instance.new("Tool")
-    zSkill.Name = "Dragon Breath [Z]"
-    zSkill.RequiresHandle = false
-    zSkill.Parent = backpack
-    zSkill.Activated:Connect(fireBreathEffect)
-
-    local xSkill = Instance.new("Tool")
-    xSkill.Name = "Dragon Form [X]"
-    xSkill.RequiresHandle = false
-    xSkill.Parent = backpack
-    xSkill.Activated:Connect(toggleDragonForm)
     
-    MainFrame.Visible = false
+    local tool = Instance.new("Tool")
+    tool.Name = "Dragon Fruit (Eat Me)"
+    tool.RequiresHandle = true
+    tool.Parent = backpack
+    
+    local handle = Instance.new("Part")
+    handle.Name = "Handle"
+    handle.Size = Vector3.new(1.5, 1.5, 1.5)
+    handle.Color = Color3.fromRGB(0, 200, 150) -- Greenish like your photo
+    handle.Material = Enum.Material.Neon
+    handle.Parent = tool
+    
+    local mesh = Instance.new("SpecialMesh", handle)
+    mesh.MeshType = Enum.MeshType.Sphere
+    
+    -- Decorative horns for the fruit
+    local h1 = Instance.new("Part", tool)
+    h1.Size = Vector3.new(0.5, 1, 0.5)
+    h1.Color = Color3.fromRGB(100, 50, 0)
+    local w = Instance.new("Weld", h1)
+    w.Part0 = handle; w.Part1 = h1; w.C0 = CFrame.new(0.5, 0.8, 0)
+    
+    tool.Activated:Connect(function()
+        -- Eat Sequence
+        Title.Text = "EATING..."
+        task.wait(0.5)
+        tool:Destroy() -- Fruit is gone
+        Title.Text = "DRAGON POWER UNLOCKED"
+        
+        -- Give Skills
+        local s1 = Instance.new("Tool", backpack)
+        s1.Name = "Heat Beam [Z]"
+        s1.RequiresHandle = false
+        s1.Activated:Connect(fireSkill)
+        
+        local s2 = Instance.new("Tool", backpack)
+        s2.Name = "Dragon Form [X]"
+        s2.RequiresHandle = false
+        s2.Activated:Connect(transformSkill)
+        
+        MainFrame:Destroy()
+    end)
 end
 
--- Render Loop
+-- [[ ANIMATION LOOP ]]
 RunService.RenderStepped:Connect(function(dt)
-    if not dragonVisual or not dragonVisual:FindFirstChild("Body") then return end
-    t = t + dt * 6
-    local pos = root.Position
-    local rot = root.CFrame.Rotation
+    if not isTransformed or not dragonModel then return end
+    rotTick = rotTick + dt * 6
     
-    dragonVisual.Body.CFrame = CFrame.new(pos + Vector3.new(0, 12, 0)) * rot
-    dragonVisual.Head.CFrame = dragonVisual.Body.CFrame * CFrame.new(0, 1, -14)
+    local targetCF = root.CFrame
+    dragonModel.Body.CFrame = targetCF * CFrame.new(0, 15, 0)
+    dragonModel.Head.CFrame = dragonModel.Body.CFrame * CFrame.new(0, 2, -15)
     
-    wing1.CFrame = (dragonVisual.Body.CFrame * CFrame.new(-12, 2, 0)) * CFrame.Angles(0, 0, math.sin(t))
-    wing2.CFrame = (dragonVisual.Body.CFrame * CFrame.new(12, 2, 0)) * CFrame.Angles(0, 0, -math.sin(t))
+    wing1.CFrame = (dragonModel.Body.CFrame * CFrame.new(-15, 3, 0)) * CFrame.Angles(0, 0, math.sin(rotTick))
+    wing2.CFrame = (dragonModel.Body.CFrame * CFrame.new(15, 3, 0)) * CFrame.Angles(0, 0, -math.sin(rotTick))
 end)
 
--- UI Button
-local eatBtn = Instance.new("TextButton")
-eatBtn.Size = UDim2.new(0.8, 0, 0, 50)
-eatBtn.Position = UDim2.new(0.1, 0, 0.45, 0)
-eatBtn.Text = "EAT FRUIT"
-eatBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-eatBtn.TextColor3 = Color3.new(1, 1, 1)
-eatBtn.Font = Enum.Font.SourceSansBold
-eatBtn.TextSize = 16
-eatBtn.Parent = MainFrame
-Instance.new("UICorner", eatBtn)
+-- [[ START BUTTON ]]
+local btn = Instance.new("TextButton")
+btn.Size = UDim2.new(0.9, 0, 0, 40)
+btn.Position = UDim2.new(0.05, 0, 0.45, 0)
+btn.Text = "SPAWN FRUIT"
+btn.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+btn.TextColor3 = Color3.new(1, 1, 1)
+btn.Font = Enum.Font.GothamBold
+btn.Parent = MainFrame
+Instance.new("UICorner", btn)
 
-eatBtn.MouseButton1Click:Connect(eatFruit)
-
-UIS.InputBegan:Connect(function(input, gpe)
-    if gpe then return end
-    if input.KeyCode == Enum.KeyCode.Insert then
-        MainFrame.Visible = not MainFrame.Visible
-    end
+btn.MouseButton1Click:Connect(function()
+    spawnFakeFruit()
+    btn.Visible = false
+    Title.Text = "CHECK BACKPACK"
 end)
