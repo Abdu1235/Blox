@@ -1,111 +1,124 @@
+-- Dragon V2 Full System (Integrated from Pastebin)
+-- No Arabic Words / Ready for Loadstring
+
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UIS = game:GetService("UserInputService")
 local Debris = game:GetService("Debris")
-local TweenService = game:GetService("TweenService")
 
 local player = Players.LocalPlayer
 local char = player.Character or player.CharacterAdded:Wait()
-local hum = char:WaitForChild("Humanoid")
 local root = char:WaitForChild("HumanoidRootPart")
+local hum = char:WaitForChild("Humanoid")
 
 local isTransformed = false
-local dragonParts = {}
+local dragonSegments = {}
 local t = 0
 
--- [[ UI SYSTEM ]]
+-- [[ GUI Setup ]]
 local ScreenGui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
-ScreenGui.Name = "DragonV2Final"
-
 local MainFrame = Instance.new("Frame", ScreenGui)
-MainFrame.Size = UDim2.new(0, 220, 0, 90)
-MainFrame.Position = UDim2.new(0.5, -110, 0.85, 0)
-MainFrame.BackgroundColor3 = Color3.fromRGB(5, 15, 10)
-MainFrame.BorderSizePixel = 0
-Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 15)
+MainFrame.Size = UDim2.new(0, 200, 0, 100)
+MainFrame.Position = UDim2.new(0.5, -100, 0.8, 0)
+MainFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
+MainFrame.Active = true
+MainFrame.Draggable = true
+Instance.new("UICorner", MainFrame)
 
-local Btn = Instance.new("TextButton", MainFrame)
-Btn.Size = UDim2.new(0.9, 0, 0, 50)
-Btn.Position = UDim2.new(0.05, 0, 0.2, 0)
-Btn.Text = "ACTIVATE DRAGON V2"
-Btn.TextColor3 = Color3.fromRGB(0, 255, 150)
-Btn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-Btn.Font = Enum.Font.GothamBold
-Btn.TextSize = 14
-Instance.new("UICorner", Btn)
+local Status = Instance.new("TextLabel", MainFrame)
+Status.Size = UDim2.new(1, 0, 0, 30)
+Status.Text = "DRAGON V2 READY"
+Status.TextColor3 = Color3.new(1, 1, 1)
+Status.BackgroundTransparency = 1
+Status.Font = Enum.Font.GothamBold
 
--- [[ DRAGON VISUALS ]]
-function createDragonV2()
-    for _, v in pairs(dragonParts) do v:Destroy() end
-    dragonParts = {}
+local ActionBtn = Instance.new("TextButton", MainFrame)
+ActionBtn.Size = UDim2.new(0.9, 0, 0, 40)
+ActionBtn.Position = UDim2.new(0.05, 0, 0.4, 0)
+ActionBtn.Text = "OBTAIN POWER"
+ActionBtn.BackgroundColor3 = Color3.fromRGB(0, 180, 100)
+ActionBtn.TextColor3 = Color3.new(1, 1, 1)
+Instance.new("UICorner", ActionBtn)
+
+-- [[ Dragon Logic ]]
+function createDragonBody()
+    for _, v in pairs(dragonSegments) do v:Destroy() end
+    dragonSegments = {}
     
-    local segmentCount = 15 -- Longest body for 100% match
-    for i = 1, segmentCount do
+    local count = 16 -- Long Serpent Body
+    for i = 1, count do
         local seg = Instance.new("Part", workspace)
-        seg.Name = "DragonPart_" .. i
-        -- Head is larger, body tapers down
-        local sizeScale = (i == 1) and 12 or (10 - (i * 0.4))
-        seg.Size = Vector3.new(sizeScale, sizeScale * 0.8, sizeScale * 1.2)
-        seg.Color = (i % 2 == 0) and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(0, 80, 50)
+        seg.Size = (i == 1) and Vector3.new(12, 10, 14) or Vector3.new(10-i*0.5, 8-i*0.4, 10)
+        seg.Color = (i % 2 == 0) and Color3.fromRGB(0, 255, 120) or Color3.fromRGB(0, 100, 60)
         seg.Material = Enum.Material.Neon
         seg.CanCollide = false
         seg.Anchored = true
-        
-        local mesh = Instance.new("SpecialMesh", seg)
-        mesh.MeshType = Enum.MeshType.Sphere
-        
-        -- Add Horns only to Head (Segment 1)
-        if i == 1 then
-            for side = -1, 1, 2 do
-                local horn = Instance.new("Part", seg)
-                horn.Size = Vector3.new(1, 5, 1)
-                horn.Color = Color3.fromRGB(150, 120, 80)
-                horn.CanCollide = false
-                local w = Instance.new("Weld", horn)
-                w.Part0 = seg; w.Part1 = horn; w.C0 = CFrame.new(side * 3, 4, 2) * CFrame.Angles(0.5, 0, 0)
-            end
-        end
-        table.insert(dragonParts, seg)
-    end
-end
-
-function fireSkill()
-    local head = dragonParts[1]
-    if not head then return end
-    
-    -- Visual Flash
-    local light = Instance.new("PointLight", head)
-    light.Color = Color3.fromRGB(0, 255, 255)
-    light.Range = 30
-    Debris:AddItem(light, 1)
-
-    for i = 1, 30 do
-        local orb = Instance.new("Part", workspace)
-        orb.Size = Vector3.new(4, 4, 4)
-        orb.Color = Color3.fromRGB(0, 255, 200)
-        orb.Material = Enum.Material.Neon
-        orb.Shape = Enum.PartType.Ball
-        orb.CanCollide = false
-        orb.CFrame = head.CFrame * CFrame.new(0, 0, -8)
-        
-        local bv = Instance.new("BodyVelocity", orb)
-        bv.Velocity = head.CFrame.LookVector * 250
-        bv.MaxForce = Vector3.new(1,1,1) * 1e7
-        
-        Debris:AddItem(orb, 1)
-        task.wait(0.03)
+        Instance.new("SpecialMesh", seg).MeshType = Enum.MeshType.Sphere
+        table.insert(dragonSegments, seg)
     end
 end
 
 function toggleTransform()
     isTransformed = not isTransformed
     if isTransformed then
-        createDragonV2()
+        createDragonBody()
         hum.HipHeight = 25
-        hum.WalkSpeed = 120 -- High speed like V2
-        char.Archivable = true
-        local ghost = char:Clone() -- Visual effect
-        ghost.Parent = workspace
-        Debris:AddItem(ghost, 0.5)
+        hum.WalkSpeed = 100
     else
-        for _, v in pairs(dragon
+        for _, v in pairs(dragonSegments) do v:Destroy() end
+        dragonSegments = {}
+        hum.HipHeight = 0
+        hum.WalkSpeed = 16
+    end
+end
+
+function dragonBeam()
+    if not dragonSegments[1] then return end
+    for i = 1, 20 do
+        local p = Instance.new("Part", workspace)
+        p.Size = Vector3.new(6,6,6)
+        p.Color = Color3.fromRGB(0, 255, 255)
+        p.Material = Enum.Material.Neon
+        p.CFrame = dragonSegments[1].CFrame * CFrame.new(0, 0, -8)
+        p.CanCollide = false
+        local bv = Instance.new("BodyVelocity", p)
+        bv.Velocity = dragonSegments[1].CFrame.LookVector * 200
+        bv.MaxForce = Vector3.new(1,1,1)*1e7
+        Debris:AddItem(p, 1)
+        task.wait(0.05)
+    end
+end
+
+-- [[ Input & Tools ]]
+ActionBtn.MouseButton1Click:Connect(function()
+    ActionBtn.Visible = false
+    Status.Text = "DRAGON UNLOCKED"
+    
+    local z = Instance.new("Tool", player.Backpack)
+    z.Name = "Dragon Beam [Z]"
+    z.RequiresHandle = false
+    z.Activated:Connect(dragonBeam)
+    
+    local x = Instance.new("Tool", player.Backpack)
+    x.Name = "Transform [X]"
+    x.RequiresHandle = false
+    x.Activated:Connect(toggleTransform)
+end)
+
+-- [[ Serpentine Movement ]]
+RunService.RenderStepped:Connect(function(dt)
+    if not isTransformed or #dragonSegments == 0 then return end
+    t = t + dt
+    local headCF = root.CFrame * CFrame.new(0, 25, 0)
+    
+    for i, seg in ipairs(dragonSegments) do
+        if i == 1 then
+            seg.CFrame = seg.CFrame:Lerp(headCF, 0.2)
+        else
+            local prev = dragonSegments[i-1]
+            local wave = math.sin(t * 5 + i * 0.5) * 3
+            local follow = prev.CFrame * CFrame.new(wave, wave/2, 7)
+            seg.CFrame = seg.CFrame:Lerp(follow, 0.15)
+        end
+    end
+end)
